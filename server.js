@@ -45,7 +45,7 @@ app.get('/api/tasks', async (req, res) => {
             checkbox: { equals: false },
           },
           {
-            property: 'Due date',
+            property: 'Next Due',
             date: { on_or_before: today },
           },
         ],
@@ -67,7 +67,7 @@ app.get('/api/tasks', async (req, res) => {
         importance:  getSelect(p, 'Importance'),
         loe:         getSelect(p, 'LOE / Level of Effort'),
         projectTag:  getSelect(p, 'Project Tag'),
-        dueDate:     getDate(p, 'Due date'),
+        dueDate:     getDate(p, 'Next Due'),
       };
     });
 
