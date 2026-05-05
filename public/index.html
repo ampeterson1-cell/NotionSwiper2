@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notion Swiper</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Notion Swiper</h1>
+      <p id="counter" class="counter"></p>
+    </header>
+
+    <div id="card-area">
+      <div id="hint-left" class="swipe-hint hint-left">⏭ Skip</div>
+      <div id="hint-right" class="swipe-hint hint-right">✅ Do it</div>
+
+      <div id="card-stack"></div>
+
+      <div id="empty-state" class="empty-state hidden">
+        <div class="empty-icon">🎉</div>
+        <p>All caught up!</p>
+        <p class="empty-sub">No tasks left to review.</p>
+        <button id="reload-btn">Reload tasks</button>
+      </div>
+
+      <div id="loading-state" class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading tasks…</p>
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <button class="action-btn btn-skip" id="btn-skip" title="Skip (←)">
+        <span class="btn-icon">⏭</span>
+        <span class="btn-label">Skip</span>
+      </button>
+      <button class="action-btn btn-snooze" id="btn-snooze" title="Snooze (Space)">
+        <span class="btn-icon">💤</span>
+        <span class="btn-label">Snooze</span>
+      </button>
+      <button class="action-btn btn-do" id="btn-do" title="Do it (→)">
+        <span class="btn-icon">✅</span>
+        <span class="btn-label">Do it</span>
+      </button>
+    </div>
+
+    <div class="keyboard-hint">
+      <kbd>←</kbd> Skip &nbsp;|&nbsp; <kbd>Space</kbd> Snooze &nbsp;|&nbsp; <kbd>→</kbd> Do it
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

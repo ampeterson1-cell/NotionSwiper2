@@ -1,0 +1,306 @@
+:root {
+  --bg: #0f0f13;
+  --surface: #1c1c24;
+  --surface2: #26262f;
+  --border: #2e2e3a;
+  --text: #f0f0f5;
+  --text-muted: #8888a0;
+  --green: #22c55e;
+  --red: #f43f5e;
+  --amber: #f59e0b;
+  --blue: #3b82f6;
+  --purple: #a78bfa;
+  --radius: 20px;
+  --card-w: min(380px, 90vw);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 1rem;
+}
+
+#app {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+header {
+  text-align: center;
+  padding-top: 0.5rem;
+}
+
+header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.counter {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+  min-height: 1.2em;
+}
+
+/* ── Card Area ── */
+#card-area {
+  position: relative;
+  width: var(--card-w);
+  height: 340px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Swipe Hints ── */
+.swipe-hint {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  z-index: 10;
+  white-space: nowrap;
+}
+
+.hint-left  { left: -110px; color: var(--red);   border: 2px solid var(--red); }
+.hint-right { right: -110px; color: var(--green); border: 2px solid var(--green); }
+
+/* ── Card Stack ── */
+#card-stack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.card {
+  position: absolute;
+  inset: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  cursor: grab;
+  user-select: none;
+  transform-origin: bottom center;
+  transition: box-shadow 0.2s;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  will-change: transform;
+}
+
+.card:active { cursor: grabbing; }
+
+/* stacked cards behind */
+.card:nth-child(2) {
+  transform: scale(0.96) translateY(10px);
+  z-index: 0;
+  pointer-events: none;
+}
+.card:nth-child(3) {
+  transform: scale(0.92) translateY(20px);
+  z-index: -1;
+  pointer-events: none;
+}
+.card:nth-child(n+4) { display: none; }
+
+.card:first-child { z-index: 1; }
+
+/* Drag overlays */
+.card.dragging { transition: none; }
+
+.card-do-overlay,
+.card-skip-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  opacity: 0;
+  pointer-events: none;
+  border: 3px solid transparent;
+}
+
+.card-do-overlay   { background: rgba(34,197,94,0.12);  border-color: var(--green); }
+.card-skip-overlay { background: rgba(244,63,94,0.12); border-color: var(--red); }
+
+/* Card content */
+.card-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  width: fit-content;
+}
+
+.priority-high   { background: rgba(244,63,94,0.15);  color: var(--red); }
+.priority-medium { background: rgba(245,158,11,0.15); color: var(--amber); }
+.priority-low    { background: rgba(59,130,246,0.15); color: var(--blue); }
+.priority-none   { background: var(--surface2); color: var(--text-muted); }
+
+.card-name {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  flex: 1;
+}
+
+.card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: auto;
+}
+
+.card-due {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.card-due.overdue { color: var(--red); }
+.card-due.today   { color: var(--amber); }
+.card-due.soon    { color: var(--blue); }
+
+/* ── Fly-out animations ── */
+@keyframes flyRight {
+  to { transform: translateX(140%) rotate(25deg); opacity: 0; }
+}
+@keyframes flyLeft {
+  to { transform: translateX(-140%) rotate(-25deg); opacity: 0; }
+}
+@keyframes flyUp {
+  to { transform: translateY(-120%) scale(0.8); opacity: 0; }
+}
+
+.fly-right { animation: flyRight 0.35s ease-in forwards; }
+.fly-left  { animation: flyLeft  0.35s ease-in forwards; }
+.fly-up    { animation: flyUp    0.3s ease-in forwards; }
+
+/* ── Empty / Loading ── */
+.empty-state, .loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  position: absolute;
+  inset: 0;
+  justify-content: center;
+}
+
+.empty-icon { font-size: 3.5rem; }
+
+.empty-state p { font-size: 1.1rem; font-weight: 600; }
+.empty-sub { font-size: 0.9rem; color: var(--text-muted); font-weight: 400; }
+
+.hidden { display: none !important; }
+
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--purple);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#reload-btn {
+  margin-top: 0.5rem;
+  padding: 0.6rem 1.4rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+#reload-btn:hover { background: var(--border); }
+
+/* ── Action Bar ── */
+.action-bar {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 62px; height: 62px;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.15s;
+  color: var(--text);
+}
+
+.action-btn:hover { transform: scale(1.08); background: var(--surface2); }
+.action-btn:active { transform: scale(0.95); }
+
+.btn-skip   { border-color: rgba(244,63,94,0.4); }
+.btn-skip:hover { background: rgba(244,63,94,0.12); }
+
+.btn-do     { border-color: rgba(34,197,94,0.4); }
+.btn-do:hover { background: rgba(34,197,94,0.12); }
+
+.btn-snooze { border-color: rgba(245,158,11,0.3); width: 52px; height: 52px; }
+.btn-snooze:hover { background: rgba(245,158,11,0.1); }
+
+.btn-icon { font-size: 1.4rem; line-height: 1; }
+.btn-label { font-size: 0.6rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); display: none; }
+
+/* ── Keyboard hint ── */
+.keyboard-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+kbd {
+  display: inline-block;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.7rem;
+  font-family: inherit;
+}
