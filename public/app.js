@@ -54,7 +54,6 @@
 
     emptyState.classList.add('hidden');
 
-    // Render up to 3 cards (top card + 2 background cards)
     remaining.slice(0, 3).forEach((task, i) => {
       const card = buildCard(task);
       if (i === 0) attachDrag(card, task);
@@ -67,7 +66,7 @@
     card.className = 'card';
     card.dataset.id = task.id;
 
-    const doOverlay   = document.createElement('div');
+    const doOverlay = document.createElement('div');
     doOverlay.className = 'card-do-overlay';
     doOverlay.textContent = '✅';
 
@@ -75,50 +74,82 @@
     skipOverlay.className = 'card-skip-overlay';
     skipOverlay.textContent = '⏭';
 
-    const tag = document.createElement('div');
-    tag.className = `card-tag ${priorityClass(task.priority)}`;
-    tag.textContent = task.priority ? `⚡ ${task.priority}` : '— No priority';
+    // ── Top badge row: urgency + project tag ──
+    const topRow = document.createElement('div');
+    topRow.className = 'card-top-row';
 
+    const urgencyBadge = document.createElement('div');
+    urgencyBadge.className = `card-badge urgency-${slugify(task.urgency)}`;
+    urgencyBadge.textContent = urgencyLabel(task.urgency);
+    topRow.appendChild(urgencyBadge);
+
+    if (task.projectTag) {
+      const projBadge = document.createElement('div');
+      projBadge.className = 'card-badge badge-project';
+      projBadge.textContent = task.projectTag;
+      topRow.appendChild(projBadge);
+    }
+
+    // ── Task name ──
     const name = document.createElement('div');
     name.className = 'card-name';
     name.textContent = task.name;
 
+    // ── Bottom meta row ──
     const meta = document.createElement('div');
     meta.className = 'card-meta';
 
+    if (task.importance) {
+      const imp = document.createElement('div');
+      imp.className = 'card-meta-row';
+      imp.innerHTML = `<span class="meta-icon">⚡</span><span class="meta-label importance-${slugify(task.importance)}">${task.importance}</span>`;
+      meta.appendChild(imp);
+    }
+
+    if (task.loe) {
+      const loe = document.createElement('div');
+      loe.className = 'card-meta-row';
+      loe.innerHTML = `<span class="meta-icon">⏱</span><span class="meta-label loe-${slugify(task.loe)}">${task.loe} effort</span>`;
+      meta.appendChild(loe);
+    }
+
     if (task.dueDate) {
-      const due = document.createElement('div');
       const { label, cls } = formatDue(task.dueDate);
-      due.className = `card-due ${cls}`;
-      due.innerHTML = `<span>📅</span><span>${label}</span>`;
+      const due = document.createElement('div');
+      due.className = 'card-meta-row';
+      due.innerHTML = `<span class="meta-icon">📅</span><span class="card-due ${cls}">${label}</span>`;
       meta.appendChild(due);
     }
 
-    card.append(doOverlay, skipOverlay, tag, name, meta);
+    card.append(doOverlay, skipOverlay, topRow, name, meta);
     return card;
   }
 
-  // ── Priority helpers ───────────────────────────────────────────────────────
-  function priorityClass(priority) {
-    if (!priority) return 'priority-none';
-    const p = priority.toLowerCase();
-    if (p.includes('high') || p.includes('urgent') || p === '1') return 'priority-high';
-    if (p.includes('med') || p === '2') return 'priority-medium';
-    if (p.includes('low') || p === '3') return 'priority-low';
-    return 'priority-none';
+  // ── Badge helpers ──────────────────────────────────────────────────────────
+  function slugify(val) {
+    return (val || 'none').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  }
+
+  function urgencyLabel(val) {
+    const map = {
+      'urgent':        '🔴 Urgent',
+      'time sensitive':'🟡 Time Sensitive',
+      'not urgent':    '🟢 Not Urgent',
+      'unplanned':     '⚪ Unplanned',
+    };
+    return map[(val || '').toLowerCase()] || val || 'No urgency';
   }
 
   function formatDue(dateStr) {
-    const due  = new Date(dateStr + 'T00:00:00');
-    const now  = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
-    const diff = Math.round((dueDay - today) / 86400000);
+    const due   = new Date(dateStr + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diff  = Math.round((due - today) / 86400000);
 
-    if (diff < 0)  return { label: `Overdue by ${-diff}d`, cls: 'overdue' };
-    if (diff === 0) return { label: 'Due today', cls: 'today' };
-    if (diff === 1) return { label: 'Due tomorrow', cls: 'soon' };
-    if (diff <= 7) return { label: `Due in ${diff} days`, cls: 'soon' };
+    if (diff < 0)   return { label: `Overdue by ${-diff}d`, cls: 'overdue' };
+    if (diff === 0) return { label: 'Due today',             cls: 'today' };
+    if (diff === 1) return { label: 'Due tomorrow',          cls: 'soon' };
+    if (diff <= 7)  return { label: `Due in ${diff} days`,   cls: 'soon' };
     return { label: `Due ${due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`, cls: '' };
   }
 
@@ -141,8 +172,7 @@
       if (!dragging) return;
       curX = x - startX;
       curY = y - startY;
-      const rot = curX * 0.08;
-      card.style.transform = `translate(${curX}px, ${curY}px) rotate(${rot}deg)`;
+      card.style.transform = `translate(${curX}px, ${curY}px) rotate(${curX * 0.08}deg)`;
 
       const ratio = Math.min(Math.abs(curX) / THRESHOLD, 1);
       if (curX > 0) {
@@ -165,8 +195,8 @@
       hintLeft.style.opacity  = 0;
       hintRight.style.opacity = 0;
 
-      if (curX > THRESHOLD)       decide('do');
-      else if (curX < -THRESHOLD) decide('skip');
+      if (curX > THRESHOLD)        decide('do');
+      else if (curX < -THRESHOLD)  decide('skip');
       else {
         card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
         card.style.transform  = '';
@@ -176,19 +206,15 @@
       }
     }
 
-    // Mouse
-    card.addEventListener('mousedown',  (e) => onStart(e.clientX, e.clientY));
+    card.addEventListener('mousedown', (e) => onStart(e.clientX, e.clientY));
     window.addEventListener('mousemove', (e) => { if (dragging) onMove(e.clientX, e.clientY); });
-    window.addEventListener('mouseup',   ()  => onEnd());
+    window.addEventListener('mouseup', () => onEnd());
 
-    // Touch
     card.addEventListener('touchstart', (e) => {
-      const t = e.touches[0];
-      onStart(t.clientX, t.clientY);
+      onStart(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: true });
     card.addEventListener('touchmove', (e) => {
-      const t = e.touches[0];
-      onMove(t.clientX, t.clientY);
+      onMove(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: true });
     card.addEventListener('touchend', () => onEnd());
   }
@@ -198,24 +224,23 @@
     if (animating || current >= tasks.length) return;
     animating = true;
 
-    const task = tasks[current];
+    const task    = tasks[current];
     const topCard = stack.firstElementChild;
 
-    console.log(`[${action.toUpperCase()}]`, task.name, '—', task.id);
+    console.log(`[${action.toUpperCase()}]`, task.name, {
+      urgency:    task.urgency,
+      importance: task.importance,
+      loe:        task.loe,
+      due:        task.dueDate,
+    });
 
-    // Fly the card out
-    const flyClass = action === 'do' ? 'fly-right' : action === 'skip' ? 'fly-left' : 'fly-up';
-    topCard.classList.add(flyClass);
+    topCard.classList.add(action === 'do' ? 'fly-right' : action === 'skip' ? 'fly-left' : 'fly-up');
 
-    // Fire API call in parallel with animation
-    const apiAction = action === 'snooze' ? 'snooze' : action;
-    fetch(`/api/tasks/${task.id}/${apiAction}`, { method: 'POST' })
+    fetch(`/api/tasks/${task.id}/${action}`, { method: 'POST' })
       .then(r => r.json())
-      .then(d => { if (!d.ok) console.warn('API response:', d); })
       .catch(err => console.error('API error:', err));
 
     await delay(350);
-
     current++;
     animating = false;
     renderStack();
@@ -225,15 +250,15 @@
   // ── Keyboard ───────────────────────────────────────────────────────────────
   document.addEventListener('keydown', (e) => {
     if (e.repeat) return;
-    if (e.key === 'ArrowRight') decide('do');
-    else if (e.key === 'ArrowLeft') decide('skip');
-    else if (e.key === ' ') { e.preventDefault(); decide('snooze'); }
+    if (e.key === 'ArrowRight')      decide('do');
+    else if (e.key === 'ArrowLeft')  decide('skip');
+    else if (e.key === ' ')          { e.preventDefault(); decide('snooze'); }
   });
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function updateCounter() {
-    const remaining = tasks.length - current;
-    counter.textContent = remaining > 0 ? `${remaining} task${remaining !== 1 ? 's' : ''} remaining` : '';
+    const n = tasks.length - current;
+    counter.textContent = n > 0 ? `${n} task${n !== 1 ? 's' : ''} remaining` : '';
   }
 
   function showLoading(show) {
@@ -242,6 +267,5 @@
 
   function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-  // ── Boot ───────────────────────────────────────────────────────────────────
   loadTasks();
 })();
