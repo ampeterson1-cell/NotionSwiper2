@@ -74,14 +74,9 @@
     skipOverlay.className = 'card-skip-overlay';
     skipOverlay.textContent = '⏭';
 
-    // ── Top badge row: urgency + project tag ──
+    // ── Project tag (top-right) ──
     const topRow = document.createElement('div');
     topRow.className = 'card-top-row';
-
-    const urgencyBadge = document.createElement('div');
-    urgencyBadge.className = `card-badge urgency-${slugify(task.urgency)}`;
-    urgencyBadge.textContent = urgencyLabel(task.urgency);
-    topRow.appendChild(urgencyBadge);
 
     if (task.projectTag) {
       const projBadge = document.createElement('div');
@@ -95,49 +90,47 @@
     name.className = 'card-name';
     name.textContent = task.name;
 
-    // ── Bottom meta row ──
-    const meta = document.createElement('div');
-    meta.className = 'card-meta';
+    // ── Chip row: urgency · importance · due date ──
+    const chips = document.createElement('div');
+    chips.className = 'card-chips';
 
-    if (task.importance) {
-      const imp = document.createElement('div');
-      imp.className = 'card-meta-row';
-      imp.innerHTML = `<span class="meta-icon">⚡</span><span class="meta-label importance-${slugify(task.importance)}">${task.importance}</span>`;
-      meta.appendChild(imp);
+    if (task.urgency) {
+      chips.appendChild(makeChip(urgencyLabel(task.urgency), `chip-urgency-${slugify(task.urgency)}`));
     }
 
-    if (task.loe) {
-      const loe = document.createElement('div');
-      loe.className = 'card-meta-row';
-      loe.innerHTML = `<span class="meta-icon">⏱</span><span class="meta-label loe-${slugify(task.loe)}">${task.loe} effort</span>`;
-      meta.appendChild(loe);
+    if (task.importance) {
+      chips.appendChild(makeChip(task.importance, `chip-importance-${slugify(task.importance)}`));
     }
 
     if (task.dueDate) {
       const { label, cls } = formatDue(task.dueDate);
-      const due = document.createElement('div');
-      due.className = 'card-meta-row';
-      due.innerHTML = `<span class="meta-icon">📅</span><span class="card-due ${cls}">${label}</span>`;
-      meta.appendChild(due);
+      chips.appendChild(makeChip(label, `chip-due-${cls || 'default'}`));
     }
 
-    card.append(doOverlay, skipOverlay, topRow, name, meta);
+    card.append(doOverlay, skipOverlay, topRow, name, chips);
     return card;
   }
 
-  // ── Badge helpers ──────────────────────────────────────────────────────────
+  // ── Chip / Badge helpers ───────────────────────────────────────────────────
+  function makeChip(label, cls) {
+    const el = document.createElement('span');
+    el.className = `chip ${cls}`;
+    el.textContent = label;
+    return el;
+  }
+
   function slugify(val) {
     return (val || 'none').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
   }
 
   function urgencyLabel(val) {
     const map = {
-      'urgent':        '🔴 Urgent',
-      'time sensitive':'🟡 Time Sensitive',
-      'not urgent':    '🟢 Not Urgent',
-      'unplanned':     '⚪ Unplanned',
+      'urgent':         'Urgent',
+      'time sensitive': 'Time Sensitive',
+      'not urgent':     'Not Urgent',
+      'unplanned':      'Unplanned',
     };
-    return map[(val || '').toLowerCase()] || val || 'No urgency';
+    return map[(val || '').toLowerCase()] || val || '';
   }
 
   function formatDue(dateStr) {

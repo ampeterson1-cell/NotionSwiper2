@@ -144,12 +144,11 @@ header h1 {
 .card-do-overlay   { background: rgba(66,135,119,0.07); border-color: var(--tag-green-text); }
 .card-skip-overlay { background: rgba(212,76,71,0.07);  border-color: var(--tag-red-text); }
 
-/* ── Top badge row ── */
+/* ── Top badge row (project tag only) ── */
 .card-top-row {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  flex-wrap: wrap;
+  min-height: 1.2rem;
 }
 
 .card-badge {
@@ -162,13 +161,7 @@ header h1 {
   white-space: nowrap;
 }
 
-.urgency-urgent          { background: var(--tag-red-bg);    color: var(--tag-red-text); }
-.urgency-time-sensitive  { background: var(--tag-yellow-bg); color: var(--tag-yellow-text); }
-.urgency-not-urgent      { background: var(--tag-green-bg);  color: var(--tag-green-text); }
-.urgency-unplanned,
-.urgency-none            { background: var(--tag-gray-bg);   color: var(--tag-gray-text); }
-
-.badge-project { background: var(--tag-purple-bg); color: var(--tag-purple-text); margin-left: auto; }
+.badge-project { background: var(--tag-purple-bg); color: var(--tag-purple-text); }
 
 /* ── Task name ── */
 .card-name {
@@ -180,39 +173,44 @@ header h1 {
   flex: 1;
 }
 
-/* ── Meta rows ── */
-.card-meta {
+/* ── Chip row ── */
+.card-chips {
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  flex-wrap: wrap;
+  gap: 0.35rem;
   margin-top: auto;
   padding-top: 0.85rem;
   border-top: 1px solid var(--border);
 }
 
-.card-meta-row {
-  display: flex;
+.chip {
+  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.78rem;
-  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 0.18rem 0.5rem;
+  border-radius: 3px;
+  white-space: nowrap;
+  line-height: 1.4;
 }
 
-.meta-icon { font-size: 0.8rem; line-height: 1; }
+/* Urgency chips */
+.chip-urgency-urgent          { background: #ffdede; color: #c4453a; }
+.chip-urgency-time-sensitive  { background: #fdecc8; color: #9f6b3f; }
+.chip-urgency-not-urgent      { background: #e3e2e0; color: #5a5a55; }
+.chip-urgency-unplanned       { background: #e3e2e0; color: #5a5a55; }
 
-.importance-very-important    { color: var(--tag-red-text);    font-weight: 500; }
-.importance-important         { color: var(--tag-orange-text); font-weight: 500; }
-.importance-medium-importance { color: var(--text-muted); }
-.importance-unplanned         { color: var(--text-light); }
+/* Importance chips */
+.chip-importance-very-important    { background: #d3e5ef; color: #2f7597; }
+.chip-importance-important         { background: #d3e5ef; color: #2f7597; }
+.chip-importance-medium-importance { background: #e8deee; color: #7a4f9a; }
+.chip-importance-unplanned         { background: #e3e2e0; color: #5a5a55; }
 
-.loe-high   { color: var(--tag-red-text); }
-.loe-medium { color: var(--tag-yellow-text); }
-.loe-low    { color: var(--tag-green-text); }
-
-.card-due         { color: var(--text-muted); }
-.card-due.overdue { color: var(--tag-red-text);    font-weight: 500; }
-.card-due.today   { color: var(--tag-orange-text); font-weight: 500; }
-.card-due.soon    { color: var(--tag-blue-text); }
+/* Due date chips */
+.chip-due-overdue { background: #ffdede; color: #c4453a; }
+.chip-due-today   { background: #fdecc8; color: #9f6b3f; }
+.chip-due-soon    { background: #e3e2e0; color: #5a5a55; }
+.chip-due-default { background: #e3e2e0; color: #5a5a55; }
 
 /* ── Fly-out animations ── */
 @keyframes flyRight { to { transform: translateX(140%) rotate(18deg);  opacity: 0; } }
