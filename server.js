@@ -49,7 +49,10 @@ app.get('/api/tasks', async (req, res) => {
 
     const getSelect = (props, key) => props[key]?.select?.name || null;
     const getDate   = (props, key) => props[key]?.date?.start || null;
-    const getTitle  = (props, key) => props[key]?.title?.map((t) => t.plain_text).join('') || 'Untitled';
+    const getTitle  = (props) => {
+      const titleProp = Object.values(props).find((v) => v.type === 'title');
+      return titleProp?.title?.map((t) => t.plain_text).join('') || 'Untitled';
+    };
 
     // Find the date field by trying known names, then fall back to any date field
     const findDueDate = (props) => {
@@ -68,7 +71,7 @@ app.get('/api/tasks', async (req, res) => {
       const p = page.properties;
       return {
         id:         page.id,
-        name:       getTitle(p, 'Task'),
+        name:       getTitle(p),
         urgency:    getSelect(p, 'Urgency'),
         importance: getSelect(p, 'Importance'),
         loe:        getSelect(p, 'LOE / Level of Effort'),
