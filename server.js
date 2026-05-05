@@ -36,16 +36,19 @@ app.get('/api/tasks', async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
-    // Filter only by Done in Notion; date filtering done in JS to avoid
-    // field-name mismatches causing the whole query to fail.
-    const response = await notion.databases.query({
-      database_id: DATABASE_ID,
-      filter: {
-        property: 'Done',
-        checkbox: { equals: false },
-      },
-      page_size: 100,
-    });
+    // Paginate through all results — Notion returns max 100 per page
+    const allPages = [];
+    let cursor = undefined;
+    do {
+      const response = await notion.databases.query({
+        database_id: DATABASE_ID,
+        filter: { property: 'Done', checkbox: { equals: false } },
+        page_size: 100,
+        ...(cursor ? { start_cursor: cursor } : {}),
+      });
+      allPages.push(...response.results);
+      cursor = response.has_more ? response.next_cursor : undefined;
+    } while (cursor);
 
     const getSelect = (props, key) => props[key]?.select?.name || null;
     const getDate   = (props, key) => props[key]?.date?.start || null;
@@ -67,7 +70,7 @@ app.get('/api/tasks', async (req, res) => {
       return null;
     };
 
-    let tasks = response.results.map((page) => {
+    let tasks = allPages.map((page) => {
       const p = page.properties;
       return {
         id:         page.id,
