@@ -36,21 +36,14 @@ app.get('/api/tasks', async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
+    // Filter only by Done in Notion; date filtering done in JS to avoid
+    // field-name mismatches causing the whole query to fail.
     const response = await notion.databases.query({
       database_id: DATABASE_ID,
       filter: {
-        and: [
-          {
-            property: 'Done',
-            checkbox: { equals: false },
-          },
-          {
-            property: 'Next Due',
-            date: { on_or_before: today },
-          },
-        ],
+        property: 'Done',
+        checkbox: { equals: false },
       },
-      // Fetch all; we sort semantically in JS below
       page_size: 100,
     });
 
@@ -58,18 +51,34 @@ app.get('/api/tasks', async (req, res) => {
     const getDate   = (props, key) => props[key]?.date?.start || null;
     const getTitle  = (props, key) => props[key]?.title?.map((t) => t.plain_text).join('') || 'Untitled';
 
-    const tasks = response.results.map((page) => {
+    // Find the date field by trying known names, then fall back to any date field
+    const findDueDate = (props) => {
+      for (const key of ['Next Due', 'Due date', 'Due Date', 'Due', 'Deadline']) {
+        const val = getDate(props, key);
+        if (val) return val;
+      }
+      // Last resort: grab the first date field found
+      for (const v of Object.values(props)) {
+        if (v.type === 'date' && v.date?.start) return v.date.start;
+      }
+      return null;
+    };
+
+    let tasks = response.results.map((page) => {
       const p = page.properties;
       return {
-        id:          page.id,
-        name:        getTitle(p, 'Task'),
-        urgency:     getSelect(p, 'Urgency'),
-        importance:  getSelect(p, 'Importance'),
-        loe:         getSelect(p, 'LOE / Level of Effort'),
-        projectTag:  getSelect(p, 'Project Tag'),
-        dueDate:     getDate(p, 'Next Due'),
+        id:         page.id,
+        name:       getTitle(p, 'Task'),
+        urgency:    getSelect(p, 'Urgency'),
+        importance: getSelect(p, 'Importance'),
+        loe:        getSelect(p, 'LOE / Level of Effort'),
+        projectTag: getSelect(p, 'Project Tag'),
+        dueDate:    findDueDate(p),
       };
     });
+
+    // Keep only tasks due on or before today
+    tasks = tasks.filter((t) => t.dueDate && t.dueDate <= today);
 
     // Sort: Urgency asc (Urgent first), then Importance asc (Very Important first)
     tasks.sort((a, b) => {
