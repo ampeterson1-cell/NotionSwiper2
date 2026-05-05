@@ -9,67 +9,73 @@ app.use(express.static('public'));
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
 const DATABASE_ID = process.env.NOTION_DATABASE_ID;
 
-// Fetch tasks that are not done and not already in My Day
+// Semantic sort order — lower number = higher priority
+const URGENCY_RANK = {
+  'urgent':        0,
+  'time sensitive': 1,
+  'not urgent':    2,
+  'unplanned':     3,
+};
+
+const IMPORTANCE_RANK = {
+  'very important':    0,
+  'important':         1,
+  'medium importance': 2,
+  'unplanned':         3,
+};
+
+function rankUrgency(val) {
+  return URGENCY_RANK[(val || '').toLowerCase()] ?? 99;
+}
+
+function rankImportance(val) {
+  return IMPORTANCE_RANK[(val || '').toLowerCase()] ?? 99;
+}
+
 app.get('/api/tasks', async (req, res) => {
   try {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
     const response = await notion.databases.query({
       database_id: DATABASE_ID,
       filter: {
         and: [
           {
-            property: 'Status',
-            status: {
-              does_not_equal: 'Done',
-            },
+            property: 'Done',
+            checkbox: { equals: false },
           },
           {
-            property: 'My Day',
-            checkbox: {
-              equals: false,
-            },
+            property: 'Due date',
+            date: { on_or_before: today },
           },
         ],
       },
-      sorts: [
-        { property: 'Priority', direction: 'ascending' },
-        { property: 'Due', direction: 'ascending' },
-      ],
+      // Fetch all; we sort semantically in JS below
+      page_size: 100,
     });
 
+    const getSelect = (props, key) => props[key]?.select?.name || null;
+    const getDate   = (props, key) => props[key]?.date?.start || null;
+    const getTitle  = (props, key) => props[key]?.title?.map((t) => t.plain_text).join('') || 'Untitled';
+
     const tasks = response.results.map((page) => {
-      const props = page.properties;
-
-      const getName = () => {
-        const title = props.Name || props.Title || props.title;
-        if (!title) return 'Untitled';
-        return title.title?.map((t) => t.plain_text).join('') || 'Untitled';
-      };
-
-      const getPriority = () => {
-        for (const key of ['Priority', 'Importance', 'priority']) {
-          const p = props[key];
-          if (!p) continue;
-          if (p.type === 'select') return p.select?.name || null;
-          if (p.type === 'multi_select') return p.multi_select?.[0]?.name || null;
-          if (p.type === 'number') return p.number?.toString() || null;
-        }
-        return null;
-      };
-
-      const getDueDate = () => {
-        for (const key of ['Due', 'Due Date', 'due', 'due_date', 'Deadline']) {
-          const d = props[key];
-          if (d?.type === 'date' && d.date?.start) return d.date.start;
-        }
-        return null;
-      };
-
+      const p = page.properties;
       return {
-        id: page.id,
-        name: getName(),
-        priority: getPriority(),
-        dueDate: getDueDate(),
+        id:          page.id,
+        name:        getTitle(p, 'Task'),
+        urgency:     getSelect(p, 'Urgency'),
+        importance:  getSelect(p, 'Importance'),
+        loe:         getSelect(p, 'LOE / Level of Effort'),
+        projectTag:  getSelect(p, 'Project Tag'),
+        dueDate:     getDate(p, 'Due date'),
       };
+    });
+
+    // Sort: Urgency asc (Urgent first), then Importance asc (Very Important first)
+    tasks.sort((a, b) => {
+      const uDiff = rankUrgency(a.urgency) - rankUrgency(b.urgency);
+      if (uDiff !== 0) return uDiff;
+      return rankImportance(a.importance) - rankImportance(b.importance);
     });
 
     res.json({ tasks });
@@ -79,17 +85,15 @@ app.get('/api/tasks', async (req, res) => {
   }
 });
 
-// Toggle My Day = true for a task
+// Swipe right — mark My Day = true
 app.post('/api/tasks/:id/do', async (req, res) => {
   try {
     const { id } = req.params;
     await notion.pages.update({
       page_id: id,
-      properties: {
-        'My Day': { checkbox: true },
-      },
+      properties: { 'My Day': { checkbox: true } },
     });
-    console.log(`[DO] Task ${id} added to My Day`);
+    console.log(`[DO] Task ${id} → My Day`);
     res.json({ ok: true });
   } catch (err) {
     console.error('Error updating task:', err.message);
@@ -97,17 +101,13 @@ app.post('/api/tasks/:id/do', async (req, res) => {
   }
 });
 
-// Log a skip (no Notion update needed)
 app.post('/api/tasks/:id/skip', async (req, res) => {
-  const { id } = req.params;
-  console.log(`[SKIP] Task ${id} skipped`);
+  console.log(`[SKIP] Task ${req.params.id}`);
   res.json({ ok: true });
 });
 
-// Log a snooze (no Notion update needed — extend later)
 app.post('/api/tasks/:id/snooze', async (req, res) => {
-  const { id } = req.params;
-  console.log(`[SNOOZE] Task ${id} snoozed`);
+  console.log(`[SNOOZE] Task ${req.params.id}`);
   res.json({ ok: true });
 });
 
